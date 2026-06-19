@@ -18,14 +18,15 @@ import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { STLLoader }       from 'three/addons/loaders/STLLoader.js';
 import { GLTFLoader }      from 'three/addons/loaders/GLTFLoader.js';
+import { TilesRenderer }   from '3d-tiles-renderer';
 
 // ── Sensitivity ───────────────────────────────────────────────
 const ROT_SENSITIVITY   = 3.5;  // radians per normalised unit
 const PAN_SENSITIVITY   = 2.5;
 const TWIST_SENSITIVITY = 2.5;
-const ZOOM_MIN          = 0.15;
-const ZOOM_MAX          = 8.0;
-const PAN_LIMIT         = 4.0;  // clamp model to stay inside screen bounds
+const ZOOM_MIN          = 0.05;
+const ZOOM_MAX          = 1500000.0; // Massive zoom max to reach street level
+const PAN_LIMIT         = 100000.0;  // Allow panning across the massive zoomed globe
 
 // ── EMA smoothing (lower = more lag, higher = more snap) ──────
 const ROT_ALPHA   = 0.10;
@@ -60,6 +61,7 @@ let renderer, camera, scene, controls;
 let modelGroup;   // parent of whatever model is active
 let globeGroup;   // the default auto-rotating globe
 let activeModel = null;
+let googleTiles = null; // reference to 3d-tiles-renderer
 
 // ─────────────────────────────────────────────────────────────
 // Init
@@ -134,62 +136,25 @@ export function initScene(canvas) {
 function buildGlobe() {
   const group = new THREE.Group();
 
-  // Solid inner sphere
-  const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 64, 64),
-    new THREE.MeshPhongMaterial({
-      color:       0x0e1520,
-      emissive:    0x080f1a,
-      specular:    0x8ab4f8,
-      shininess:   60,
-      transparent: true,
-      opacity:     0.9,
-    })
-  );
-  sphere.castShadow    = true;
-  sphere.receiveShadow = true;
-  group.add(sphere);
+  // Initialize the TilesRenderer with the Google Maps API Key
+  const apiKey = 'AIzaSyBXBT5vA8Kr7mwYmoUdpt3ILP5shv-cSq0';
+  googleTiles = new TilesRenderer(`https://tile.googleapis.com/v1/3dtiles/root.json?key=${apiKey}`);
+  googleTiles.setCamera(camera);
+  googleTiles.setResolutionFromRenderer(camera, renderer);
 
-  // Thin wireframe shell
-  group.add(new THREE.Mesh(
-    new THREE.SphereGeometry(1.001, 36, 36),
-    new THREE.MeshBasicMaterial({
-      color:       0x8ab4f8,
-      wireframe:   true,
-      transparent: true,
-      opacity:     0.10,
-    })
-  ));
+  // Google 3D Tiles are strictly ECEF (Earth-Centered, Earth-Fixed)
+  // The earth has a radius of roughly 6,378,137 meters.
+  // We scale this massive coordinate system down to our 2-unit viewer.
+  // Scale = 2 / 12,756,274
+  const scale = 2 / 12756274;
+  googleTiles.group.scale.setScalar(scale);
 
-  // Lat/lon lines
-  const lineMat = new THREE.LineBasicMaterial({
-    color: 0x8ab4f8, transparent: true, opacity: 0.30,
-  });
+  // ECEF coordinates have the Z-axis going through the North Pole.
+  // Three.js uses Y-Up. Rotate the tile group to align.
+  googleTiles.group.rotation.x = -Math.PI / 2;
 
-  for (let lat = -60; lat <= 60; lat += 30) {
-    const r = Math.cos(THREE.MathUtils.degToRad(lat));
-    const y = Math.sin(THREE.MathUtils.degToRad(lat));
-    const pts = [];
-    for (let i = 0; i <= 64; i++) {
-      const t = (i / 64) * Math.PI * 2;
-      pts.push(new THREE.Vector3(r * Math.cos(t), y, r * Math.sin(t)));
-    }
-    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
-  }
-
-  for (let lon = 0; lon < 360; lon += 30) {
-    const rad = THREE.MathUtils.degToRad(lon);
-    const pts = [];
-    for (let i = 0; i <= 64; i++) {
-      const t = (i / 64) * Math.PI * 2;
-      pts.push(new THREE.Vector3(
-        Math.cos(t) * Math.cos(rad),
-        Math.sin(t),
-        Math.cos(t) * Math.sin(rad)
-      ));
-    }
-    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
-  }
+  // Add the 3D tiles group to our globe group
+  group.add(googleTiles.group);
 
   return group;
 }
@@ -431,6 +396,11 @@ export function autoRotate(gestureState) {
 
 export function renderScene() {
   if (controls) controls.update();
+  if (googleTiles) {
+    googleTiles.setCamera(camera);
+    googleTiles.setResolutionFromRenderer(camera, renderer);
+    googleTiles.update();
+  }
   renderer.render(scene, camera);
 }
 
