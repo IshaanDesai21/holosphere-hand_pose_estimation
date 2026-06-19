@@ -136,25 +136,24 @@ export function initScene(canvas) {
 function buildGlobe() {
   const group = new THREE.Group();
 
-  // Initialize the TilesRenderer with the Google Maps API Key
+  // Save the API key for later
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  googleTiles = new TilesRenderer(`https://tile.googleapis.com/v1/3dtiles/root.json?key=${apiKey}`);
-  googleTiles.setCamera(camera);
-  googleTiles.setResolutionFromRenderer(camera, renderer);
+  
+  // Use a basic colored sphere instead of Google 3D Tiles API
+  const geometry = new THREE.SphereGeometry(1, 64, 64);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0x8ab4f8,
+    metalness: 0.1,
+    roughness: 0.6,
+    clearcoat: 0.2,
+    clearcoatRoughness: 0.3,
+  });
+  
+  const globeMesh = new THREE.Mesh(geometry, material);
+  globeMesh.castShadow = true;
+  globeMesh.receiveShadow = true;
 
-  // Google 3D Tiles are strictly ECEF (Earth-Centered, Earth-Fixed)
-  // The earth has a radius of roughly 6,378,137 meters.
-  // We scale this massive coordinate system down to our 2-unit viewer.
-  // Scale = 2 / 12,756,274
-  const scale = 2 / 12756274;
-  googleTiles.group.scale.setScalar(scale);
-
-  // ECEF coordinates have the Z-axis going through the North Pole.
-  // Three.js uses Y-Up. Rotate the tile group to align.
-  googleTiles.group.rotation.x = -Math.PI / 2;
-
-  // Add the 3D tiles group to our globe group
-  group.add(googleTiles.group);
+  group.add(globeMesh);
 
   return group;
 }
