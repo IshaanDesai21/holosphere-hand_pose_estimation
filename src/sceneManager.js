@@ -139,19 +139,33 @@ function buildGlobe() {
   // Save the API key for later
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   
-  // Use a basic colored sphere instead of Google 3D Tiles API
+  const loader = new THREE.TextureLoader();
+
+  // Earth globe model
   const geometry = new THREE.SphereGeometry(1, 64, 64);
-  const material = new THREE.MeshPhysicalMaterial({
-    color: 0x8ab4f8,
-    metalness: 0.1,
-    roughness: 0.6,
-    clearcoat: 0.2,
-    clearcoatRoughness: 0.3,
+  const material = new THREE.MeshPhongMaterial({
+    map: loader.load('/textures/earth_color.jpg'),
+    normalMap: loader.load('/textures/earth_normal.jpg'),
+    specularMap: loader.load('/textures/earth_specular.jpg'),
+    specular: new THREE.Color('grey'),
+    shininess: 15
   });
   
   const globeMesh = new THREE.Mesh(geometry, material);
   globeMesh.castShadow = true;
   globeMesh.receiveShadow = true;
+
+  // Clouds layer
+  const cloudGeometry = new THREE.SphereGeometry(1.01, 64, 64);
+  const cloudMaterial = new THREE.MeshPhongMaterial({
+    map: loader.load('/textures/earth_clouds.png'),
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+  globeMesh.add(cloudMesh);
 
   group.add(globeMesh);
 
