@@ -105,9 +105,8 @@ export function initScene(canvas) {
   // ── Lighting ──────────────────────────────────────────────
   setupLights();
 
-  // ── OrbitControls — attached to body so the pointer-events:none
-  //    canvas doesn't eat mouse events ──────────────────────
-  controls = new OrbitControls(camera, document.body);
+  // ── OrbitControls ───────────────────────────────────────────
+  controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance   = 0.3;
@@ -379,7 +378,7 @@ export function applyGestureTransform(g) {
       basePanX - g.panDX * PAN_SENSITIVITY, -PAN_LIMIT, PAN_LIMIT
     );
     targetPanY = THREE.MathUtils.clamp(
-      basePanY - g.panDY * PAN_SENSITIVITY, -PAN_LIMIT, PAN_LIMIT
+      basePanY + g.panDY * PAN_SENSITIVITY, -PAN_LIMIT, PAN_LIMIT
     );
     targetRotZ = baseRotZ + g.rotDZ * TWIST_SENSITIVITY;
     targetRotX = baseRotX;

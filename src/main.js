@@ -173,8 +173,7 @@ function loop() {
 // FILE UPLOAD — STL / GLB / GLTF
 // ═══════════════════════════════════════════════════════════
 
-modelUpload.addEventListener('change', async (e) => {
-  const file = e.target.files?.[0];
+async function processFile(file) {
   if (!file) return;
 
   const ext  = file.name.split('.').pop().toLowerCase();
@@ -186,24 +185,15 @@ modelUpload.addEventListener('change', async (e) => {
 
   try {
     if (ext === 'stl') {
-      // STL: read as ArrayBuffer and parse with STLLoader
       const buffer = await file.arrayBuffer();
-      loadSTL(buffer, () => {
-        setUploadStatus(`✓ ${name}`, 'success');
-      });
-
+      loadSTL(buffer, () => setUploadStatus(`✓ ${name}`, 'success'));
     } else if (ext === 'glb' || ext === 'gltf') {
-      // GLB/GLTF: create an object URL for GLTFLoader
       const url = URL.createObjectURL(file);
       loadGLTF(url, (err) => {
         URL.revokeObjectURL(url);
-        if (err) {
-          setUploadStatus(`✗ Failed to load`, 'error');
-        } else {
-          setUploadStatus(`✓ ${name}`, 'success');
-        }
+        if (err) setUploadStatus(`✗ Failed to load`, 'error');
+        else     setUploadStatus(`✓ ${name}`, 'success');
       });
-
     } else {
       setUploadStatus('Unsupported format', 'error');
     }
@@ -211,9 +201,25 @@ modelUpload.addEventListener('change', async (e) => {
     console.error('Upload error:', err);
     setUploadStatus(`✗ Error: ${err.message}`, 'error');
   }
+}
 
-  // Reset file input so the same file can be re-uploaded
-  e.target.value = '';
+// ── Via Button ───────────────────────────────────────────────
+modelUpload.addEventListener('change', (e) => {
+  processFile(e.target.files?.[0]);
+  e.target.value = ''; // Reset so same file can be re-selected
+});
+
+// ── Via Drag & Drop ──────────────────────────────────────────
+window.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+});
+
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    processFile(e.dataTransfer.files[0]);
+  }
 });
 
 /**
