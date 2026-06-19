@@ -1,0 +1,456 @@
+/* ============================================================
+   HoloSphere — Styles
+   Design: Minimal dark UI, no glow, no vignette
+   ============================================================ */
+
+/* ---------- Design Tokens ---------- */
+:root {
+  --clr-bg:      #0a0a0c;
+  --clr-panel:   rgba(10, 10, 12, 0.7);
+  --clr-border:  rgba(255, 255, 255, 0.25);
+  --clr-text:    rgba(255, 255, 255, 0.95);
+  --clr-muted:   rgba(255, 255, 255, 0.6);
+  --clr-accent:  rgba(255, 255, 255, 0.85);
+
+  --clr-ok:      #5eff8a;
+  --clr-warn:    #ffcc55;
+  --clr-err:     #ff6b6b;
+
+  --blur:        blur(16px) saturate(140%);
+  --radius:      10px;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
+
+  --hud-w:   196px;
+  --hud-gap: 10px;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--clr-bg);
+  font-family: var(--font-sans);
+  color: var(--clr-text);
+  -webkit-font-smoothing: antialiased;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- App ---------- */
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---------- Webcam ---------- */
+#webcam {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 0;
+}
+
+/* ---------- Hand skeleton canvas ---------- */
+#hand-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+  z-index: 1;
+  pointer-events: none;
+  will-change: contents;
+}
+
+/* ---------- Three.js canvas ---------- */
+#three-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  will-change: contents;
+}
+
+/* ---------- HUD base ---------- */
+.hud {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+.hud-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+
+.hud-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--clr-text);
+}
+
+.logo-icon {
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+.hud-fps {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 10px;
+  background: var(--clr-panel);
+  border: 1px solid var(--clr-border);
+  border-radius: 6px;
+  backdrop-filter: var(--blur);
+  font-size: 0.72rem;
+}
+
+/* ── Left / right panels ─────────────────────────────────── */
+.hud-left {
+  top: 54px;
+  left: var(--hud-gap);
+  width: var(--hud-w);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hud-gap);
+}
+
+.hud-right {
+  top: 54px;
+  right: var(--hud-gap);
+  width: var(--hud-w);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hud-gap);
+}
+
+/* ── Cards ────────────────────────────────────────────────── */
+.hud-card {
+  background: var(--clr-panel);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  backdrop-filter: var(--blur);
+}
+
+.hud-card-title {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--clr-muted);
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.hud-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 0;
+}
+
+.hud-label {
+  font-size: 0.69rem;
+  color: var(--clr-muted);
+}
+
+.hud-value {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--clr-text);
+}
+
+.hud-value.mono {
+  font-family: var(--font-mono);
+  font-size: 0.69rem;
+  color: var(--clr-accent);
+}
+
+/* ── Status dot / badge ──────────────────────────────────── */
+.hud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.69rem;
+  font-weight: 500;
+}
+
+.hud-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hud-badge-inactive {
+  color: var(--clr-muted);
+}
+.hud-badge-inactive::before {
+  background: var(--clr-muted);
+}
+
+.hud-badge-active {
+  color: var(--clr-ok);
+}
+.hud-badge-active::before {
+  background: var(--clr-ok);
+}
+
+/* ── Gesture list ────────────────────────────────────────── */
+.hud-gesture-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.hud-gesture-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.gesture-icon {
+  font-size: 1.1rem;
+  line-height: 1.2;
+  flex-shrink: 0;
+  filter: grayscale(0.4);
+}
+
+.gesture-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gesture-desc strong {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.gesture-desc small {
+  font-size: 0.62rem;
+  color: var(--clr-muted);
+  line-height: 1.4;
+}
+
+/* ── Upload ──────────────────────────────────────────────── */
+.upload-formats {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.format-tag {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.07);
+  color: var(--clr-muted);
+  border: 1px solid var(--clr-border);
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text);
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.upload-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.upload-btn:active {
+  background: rgba(255,255,255,0.07);
+}
+
+.upload-status {
+  margin-top: 7px;
+  font-size: 0.67rem;
+  color: var(--clr-muted);
+  text-align: center;
+  min-height: 14px;
+}
+
+/* ---------- Splash overlay ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 12, 0.94);
+  backdrop-filter: blur(8px);
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  text-align: center;
+  max-width: 380px;
+  width: 90%;
+  padding: 44px 36px;
+  background: var(--clr-panel);
+  border: 1px solid var(--clr-border);
+  border-radius: 16px;
+  backdrop-filter: var(--blur);
+}
+
+.overlay-logo {
+  font-size: 2.8rem;
+  margin-bottom: 14px;
+  opacity: 0.7;
+}
+
+.overlay-card h1 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.overlay-card p {
+  font-size: 0.84rem;
+  color: var(--clr-muted);
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.20);
+  color: var(--clr-text);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  letter-spacing: 0.01em;
+}
+
+.start-btn:hover {
+  background: rgba(255,255,255,0.17);
+  border-color: rgba(255,255,255,0.35);
+}
+
+.start-btn:active {
+  background: rgba(255,255,255,0.08);
+}
+
+/* ---------- Loading ---------- */
+.loading-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-size: 0.82rem;
+  color: var(--clr-muted);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(255,255,255,0.6);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Error ---------- */
+.error-msg {
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: rgba(255, 107, 107, 0.10);
+  border: 1px solid rgba(255, 107, 107, 0.25);
+  border-radius: 8px;
+  color: #ffaaaa;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* ---------- Utility ---------- */
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  :root {
+    --hud-w:   150px;
+    --hud-gap: 8px;
+  }
+
+  .hud-card { padding: 9px 11px; }
+  .overlay-card { padding: 32px 22px; }
+}
+
+@media (max-width: 480px) {
+  :root { --hud-w: 130px; }
+
+  .hud-right .hud-gesture-list { display: none; }
+  .upload-btn span:last-child   { display: none; }
+}

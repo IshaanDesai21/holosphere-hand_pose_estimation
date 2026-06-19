@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HoloSphere — Real-time 3D model viewer with MediaPipe hand gesture controls. Manipulate 3D objects using your hands via webcam." />
+    <meta property="og:title" content="HoloSphere — Hand Gesture 3D Viewer" />
+    <meta property="og:description" content="Control 3D models with your bare hands. Powered by MediaPipe and Three.js." />
+    <title>HoloSphere — Hand Gesture 3D Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Webcam video background (aria-hidden: purely visual) -->
+      <video id="webcam" autoplay playsinline muted aria-hidden="true"></video>
+
+      <!-- Canvas for MediaPipe hand skeleton overlay (aria-hidden: visual overlay) -->
+      <canvas id="hand-canvas" aria-hidden="true"></canvas>
+
+      <!-- Three.js WebGL renderer canvas (transparent overlay, aria-hidden) -->
+      <canvas id="three-canvas" aria-label="3D model viewer" role="img"></canvas>
+
+      <!-- HUD: Top bar -->
+      <header class="hud hud-top">
+        <div class="hud-logo">
+          <span class="logo-icon">◎</span>
+          <span class="logo-text">HoloSphere</span>
+        </div>
+        <div class="hud-fps">
+          <span class="hud-label">FPS&nbsp;</span>
+          <span id="fps-counter" class="hud-value">--</span>
+        </div>
+      </header>
+
+      <!-- HUD: Status Panel (left) -->
+      <aside class="hud hud-left">
+        <div class="hud-card" id="hand-status-card">
+          <div class="hud-card-title">Hand Detection</div>
+          <div class="hud-card-row">
+            <span class="hud-label">Status</span>
+            <span id="hand-status" class="hud-value hud-badge hud-badge-inactive">No Hand</span>
+          </div>
+          <div class="hud-card-row">
+            <span class="hud-label">Gesture</span>
+            <span id="gesture-type" class="hud-value">—</span>
+          </div>
+          <div class="hud-card-row">
+            <span class="hud-label">Hands</span>
+            <span id="hand-count" class="hud-value">0</span>
+          </div>
+        </div>
+
+        <div class="hud-card">
+          <div class="hud-card-title">Transform</div>
+          <div class="hud-card-row">
+            <span class="hud-label">Rot X</span>
+            <span id="rot-x" class="hud-value mono">0.00°</span>
+          </div>
+          <div class="hud-card-row">
+            <span class="hud-label">Rot Y</span>
+            <span id="rot-y" class="hud-value mono">0.00°</span>
+          </div>
+          <div class="hud-card-row">
+            <span class="hud-label">Rot Z</span>
+            <span id="rot-z" class="hud-value mono">0.00°</span>
+          </div>
+          <div class="hud-card-row">
+            <span class="hud-label">Zoom</span>
+            <span id="zoom-val" class="hud-value mono">1.00×</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- HUD: Controls Panel (right) -->
+      <aside class="hud hud-right">
+        <div class="hud-card">
+          <div class="hud-card-title">Controls</div>
+          <div class="hud-gesture-list">
+            <div class="hud-gesture-item">
+              <span class="gesture-icon">✋</span>
+              <div class="gesture-desc">
+                <strong>Open hand</strong>
+                <small>Move to rotate</small>
+              </div>
+            </div>
+            <div class="hud-gesture-item">
+              <span class="gesture-icon">🤏</span>
+              <div class="gesture-desc">
+                <strong>Pinch</strong>
+                <small>Thumb + index finger zooms</small>
+              </div>
+            </div>
+            <div class="hud-gesture-item">
+              <span class="gesture-icon">👐</span>
+              <div class="gesture-desc">
+                <strong>Two hands</strong>
+                <small>Scale, pan &amp; twist</small>
+              </div>
+            </div>
+            <div class="hud-gesture-item">
+              <span class="gesture-icon">✊</span>
+              <div class="gesture-desc">
+                <strong>Fist</strong>
+                <small>Pauses — nothing moves</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File upload button -->
+        <div class="hud-card upload-card">
+          <div class="hud-card-title">Import Model</div>
+          <div class="upload-formats">
+            <span class="format-tag">STL</span>
+            <span class="format-tag">GLB</span>
+            <span class="format-tag">GLTF</span>
+          </div>
+          <label for="model-upload" class="upload-btn" id="upload-label">
+            <span class="upload-icon">⬆</span>
+            <span>Upload 3D Model</span>
+          </label>
+          <input type="file" id="model-upload" accept=".stl,.glb,.gltf" hidden />
+          <div id="upload-status" class="upload-status"></div>
+        </div>
+      </aside>
+
+      <!-- Splash overlay -->
+      <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+        <div class="overlay-card">
+          <div class="overlay-logo" aria-hidden="true">◎</div>
+          <h1 id="overlay-title">HoloSphere</h1>
+          <p>Control 3D models with your hands.<br>Powered by MediaPipe &amp; Three.js.</p>
+          <button id="start-btn" class="start-btn" type="button">Enable camera</button>
+          <div id="loading-msg" class="loading-msg hidden" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <span>Loading hand tracking…</span>
+          </div>
+          <div id="error-msg" class="error-msg hidden" role="alert"></div>
+        </div>
+      </div>
+    </div>
+
+    <noscript>
+      <div style="position:fixed;inset:0;display:grid;place-items:center;background:#050811;color:#e2e8f0;font-family:system-ui;text-align:center;padding:2rem">
+        <p>HoloSphere requires JavaScript to run. Please enable JS in your browser settings.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
