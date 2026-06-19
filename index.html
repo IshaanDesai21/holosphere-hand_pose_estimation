@@ -119,11 +119,11 @@
             <span class="format-tag">GLB</span>
             <span class="format-tag">GLTF</span>
           </div>
-          <label for="model-upload" class="upload-btn" id="upload-label">
+          <label class="upload-btn" id="upload-label">
             <span class="upload-icon">⬆</span>
             <span>Upload 3D Model</span>
+            <input type="file" id="model-upload" accept=".stl,.glb,.gltf" style="display: none;" />
           </label>
-          <input type="file" id="model-upload" accept=".stl,.glb,.gltf" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;" tabindex="-1" />
           <div id="upload-status" class="upload-status"></div>
         </div>
       </aside>
