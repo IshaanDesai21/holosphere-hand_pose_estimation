@@ -129,7 +129,6 @@ function confirmGesture(raw) {
       if (raw === candidateGesture) {
         candidateFrames++;
         if (candidateFrames >= FIST_FROM_PINCH) {
-          anchorPinchDist = null;
           stableGesture   = 'FIST';
         }
       } else {
@@ -206,7 +205,6 @@ export function processGestures(result) {
     confirmGesture('NONE');
     isPinching       = false;
     anchorPalm       = null;
-    anchorPinchDist  = null;
     anchorTwoDist    = null;
     anchorTwoMid     = null;
     anchorTwoAngle   = null;
@@ -243,12 +241,19 @@ export function processGestures(result) {
       out.rotDX =  dy;
 
     } else if (gesture === 'PINCH') {
-      const d = dist2D(lm[LM.THUMB_TIP], lm[LM.INDEX_TIP]);
-      if (!anchorPinchDist) anchorPinchDist = d;
-      anchorPalm = null;
+      const palm = palmCenter(lm);
+      if (!anchorPalm) anchorPalm = palm;
 
-      // Ratio relative to anchor: <1 = zooming in, >1 = zooming out
-      out.scaleFactor = d / anchorPinchDist;
+      // Vertical displacement of the hand controls zoom
+      // Moving hand UP (negative dy) zooms IN (scale > 1)
+      // Moving hand DOWN (positive dy) zooms OUT (scale < 1)
+      let dy = palm.y - anchorPalm.y;
+      if (Math.abs(dy) < DEAD_ZONE) dy = 0;
+
+      // scaleFactor is base * (1 - dy * sensitivity)
+      // We send it as a relative multiplier, where 1.0 is no change
+      out.scaleFactor = 1.0 - (dy * 3.0); 
+
 
     } else {
       // FIST: clear anchors, output zeros → scene stays frozen at committed base
@@ -261,7 +266,6 @@ export function processGestures(result) {
   else {
     // Clear one-hand state
     anchorPalm      = null;
-    anchorPinchDist = null;
     isPinching      = false;
 
     // Classify both hands
