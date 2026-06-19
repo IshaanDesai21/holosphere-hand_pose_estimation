@@ -137,7 +137,7 @@ function buildGlobe() {
   const group = new THREE.Group();
 
   // Initialize the TilesRenderer with the Google Maps API Key
-  const apiKey = 'AIzaSyBXBT5vA8Kr7mwYmoUdpt3ILP5shv-cSq0';
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   googleTiles = new TilesRenderer(`https://tile.googleapis.com/v1/3dtiles/root.json?key=${apiKey}`);
   googleTiles.setCamera(camera);
   googleTiles.setResolutionFromRenderer(camera, renderer);
